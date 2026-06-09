@@ -33,10 +33,10 @@ jobs:
       - name: Install MLflow runner
         shell: bash -l {0}
         run: |
-          pip install mlflow==3.3.2
+          conda run -n mlflow-ci --no-capture-output pip install mlflow==3.3.2
 
       - name: Run MLflow Project
-        shell: bash -l {0}
+        id: run-project
         env:
           DAGSHUB_REPO: ${{ secrets.DAGSHUB_REPO }}
           DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
@@ -44,7 +44,7 @@ jobs:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
           MLFLOW_REGISTERED_MODEL_NAME: ${{ secrets.MLFLOW_REGISTERED_MODEL_NAME }}
         run: |
-          mlflow run "$PROJECT_DIR" --env-manager=conda
+          conda run -n mlflow-ci --no-capture-output mlflow run "$PROJECT_DIR" --env-manager=conda
 
       - name: Upload training artifacts
         uses: actions/upload-artifact@v4
@@ -57,7 +57,7 @@ jobs:
 
       - name: Build Docker image with MLflow
         run: |
-          mlflow models build-docker \
+          conda run -n mlflow-ci --no-capture-output mlflow models build-docker \
             -m "$PROJECT_DIR/artifacts/mlflow_tuning/model" \
             -n "${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}"
 
