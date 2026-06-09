@@ -1,0 +1,79 @@
+name: MLflow Project CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PROJECT_DIR: MLProject
+  MLFLOW_EXPERIMENT_NAME: shipment-delay-risk-ci
+  MLFLOW_RUN_NAME: ci-random-forest-tuning
+  DOCKER_IMAGE_NAME: shipment-delay-risk
+
+jobs:
+  train-build-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: "3.11"
+          activate-environment: mlflow-ci
+
+      - name: Install MLflow runner
+        shell: bash -l {0}
+        run: |
+          pip install mlflow==3.3.2
+
+      - name: Run MLflow Project
+        shell: bash -l {0}
+        env:
+          DAGSHUB_REPO: ${{ secrets.DAGSHUB_REPO }}
+          DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+          MLFLOW_REGISTERED_MODEL_NAME: ${{ secrets.MLFLOW_REGISTERED_MODEL_NAME }}
+        run: |
+          mlflow run "$PROJECT_DIR" --env-manager=conda
+
+      - name: Upload training artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlflow-training-artifacts
+          path: |
+            ${{ env.PROJECT_DIR }}/artifacts/mlflow_tuning
+            ${{ env.PROJECT_DIR }}/run_id_tuning.txt
+          if-no-files-found: error
+
+      - name: Build Docker image with MLflow
+        run: |
+          mlflow models build-docker \
+            -m "$PROJECT_DIR/artifacts/mlflow_tuning/model" \
+            -n "${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}"
+
+      - name: Tag Docker image as latest
+        run: |
+          docker tag \
+            "${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}" \
+            "${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push "${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}"
+          docker push "${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest"

@@ -1,0 +1,6 @@
+Docker Hub repository:
+https://hub.docker.com/r/podomorolovers/shipment-delay-risk
+
+Workflow memakai secrets DOCKERHUB_USERNAME dan DOCKERHUB_TOKEN untuk push image:
+podomorolovers/shipment-delay-risk:<commit-sha>
+podomorolovers/shipment-delay-risk:latest
