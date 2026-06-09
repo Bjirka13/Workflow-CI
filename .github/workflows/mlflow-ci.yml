@@ -68,6 +68,8 @@ jobs:
           fi
 
       - name: Build Docker image with MLflow
+        env:
+          MLFLOW_PYTHON_VERSION: "3.11"
         run: |
           conda run -n mlflow-ci --no-capture-output mlflow models build-docker \
             -m "$PROJECT_DIR/artifacts/mlflow_tuning/model" \
