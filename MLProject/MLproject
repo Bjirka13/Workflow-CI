@@ -1,7 +1,8 @@
 name: shipment-delay-risk
 
 conda_env: conda.yaml
-
+docker_env:
+  image: python:3.11-slim
 entry_points:
   main:
     command: "python modelling.py"
