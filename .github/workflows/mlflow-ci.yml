@@ -55,6 +55,18 @@ jobs:
             ${{ env.PROJECT_DIR }}/run_id_tuning.txt
           if-no-files-found: error
 
+      - name: Check Docker Hub credentials
+        shell: bash -l {0}
+        run: |
+          if [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
+            echo "::error::DOCKERHUB_USERNAME secret is missing or empty. Set it in repository secrets."
+            exit 1
+          fi
+          if [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "::error::DOCKERHUB_TOKEN secret is missing or empty. Set it in repository secrets."
+            exit 1
+          fi
+
       - name: Build Docker image with MLflow
         run: |
           conda run -n mlflow-ci --no-capture-output mlflow models build-docker \
