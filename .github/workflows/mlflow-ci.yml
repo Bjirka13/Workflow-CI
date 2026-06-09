@@ -73,7 +73,8 @@ jobs:
         run: |
           conda run -n mlflow-ci --no-capture-output mlflow models build-docker \
             -m "$PROJECT_DIR/artifacts/mlflow_tuning/model" \
-            -n "${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}"
+            -n "${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}" \
+            --env-manager=conda
 
       - name: Tag Docker image as latest
         run: |
